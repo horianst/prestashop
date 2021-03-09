@@ -37,9 +37,13 @@
                         <th><span class="title_box active">Punct de ridicare</span></th>
                         <th><span class="title_box active">Nume destinatar</span></th>
                         <th><span class="title_box active">Localitate destinatar</span></th>
+                        <th><span class="title_box active">Cod postal</span></th>
                         <th><span class="title_box active">Plicuri</span></th>
                         <th><span class="title_box active">Colete</span></th>
                         <th><span class="title_box active">Greutate</span></th>
+                        <th><span class="title_box active">Lungime</span></th>
+                        <th><span class="title_box active">Latime</span></th>
+                        <th><span class="title_box active">Inaltime</span></th>
                         <th><span class="title_box active">Ramburs numerar</span></th>
                         <th><span class="title_box active">Ramburs cont colector</span></th>
                         <th><span class="title_box active">Platitor expeditie</span></th>
@@ -57,9 +61,13 @@
                             <td class='{cycle name=color values="odd,even"}'>{($pickups[$line.pickup_id]) ? ($pickups[$line.pickup_id]) : '-/-'}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.name}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.locality_name|cat:(($line.county_name) ? ', ' : '')|cat:$line.county_name}</td>
+                            <td class='{cycle name=color values="odd,even"}'>{$line.postal_code}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.envelopes}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.parcels}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.weight} kg</td>
+                            <td class='{cycle name=color values="odd,even"}'>{$line.lenght} cm</td>
+                            <td class='{cycle name=color values="odd,even"}'>{$line.width} cm</td>
+                            <td class='{cycle name=color values="odd,even"}'>{$line.height} cm</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.cash_repayment} lei</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.bank_repayment} lei</td>
                             <td class='{cycle name=color values="odd,even"}'>{($line.payer == 2) ? 'Destinatar' : 'Expeditor'}</td>
@@ -178,6 +186,7 @@
                 </table>
             </div>
             <div class="btn-group bulk-actions dropup">
+                {html_options id=PRINT_TYPE_ID name=PRINT_TYPE options=$printTypes selected=$printType class='filter center' style='width:100px; float:left;'}
                 <button type="submit" name="submit_printeaza" value="submit" class="btn btn-primary">
                     <i class="icon-plus-sign"></i> Printeaza AWB-urile selectate
                 </button>
@@ -195,8 +204,10 @@
                     $('input[name*=\'awbs\']:checked').each(function () {
                         coduri.push($(this).val());
                     });
+                    var format = $('#PRINT_TYPE_ID').val();
+
                     if (coduri.length > 0) {
-                        window.open('index.php?controller=CargusAdmin&type=PRINTAWB&token={$tokenAdmin}&secret={$cookie}&codes=[' + coduri.join(',') + ']', '', 'width=900, height=600, left=50, top=50');
+                        window.open('index.php?controller=CargusAdmin&type=PRINTAWB&format=' + format + '&token={$tokenAdmin}&secret={$cookie}&codes=[' + coduri.join(',') + ']', '', 'width=900, height=600, left=50, top=50');
                     } else {
                         alert('Nu ati selectat niciun AWB pentru printare!');
                     }

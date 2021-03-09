@@ -32,6 +32,9 @@ class CargusAdminController extends ModuleAdminController
             }
 
             if (isset($_GET['type']) && $_GET['type'] == 'PRINTAWB') {
+
+                $format = $_GET['format'];
+
                 $cargus = new CargusClass(
                     Configuration::get('CARGUS_API_URL', $id_lang = null),
                     Configuration::get('CARGUS_API_KEY', $id_lang = null)
@@ -46,7 +49,7 @@ class CargusAdminController extends ModuleAdminController
 
                 // UC print
                 $print = $cargus->CallMethod(
-                    'AwbDocuments?type=PDF&format=0&barCodes=' . addslashes($_GET['codes']),
+                    'AwbDocuments?type=PDF&format=' . $format . '&barCodes=' . addslashes($_GET['codes']),
                     [],
                     'GET',
                     $token
@@ -447,6 +450,7 @@ class CargusAdminController extends ModuleAdminController
                                 street_name = '',
                                 number = '',
                                 address = '".addslashes(htmlentities(trim(implode('; ', array($address->address1, $address->address2)), '; ')))."',
+                                postal_code = '".addslashes(htmlentities($address->postcode))."',
                                 contact = '".addslashes(trim(implode(' ', array($address->lastname, $address->firstname))))."',
                                 phone = '".addslashes(trim(implode('; ', array($address->phone, $address->phone_mobile)), '; '))."',
                                 email = '".addslashes($customer->email)."',

@@ -274,6 +274,9 @@ class CargusOrdersController extends ModuleAdminController
         $this->context->smarty->assign('awbs', $awbs);
         $this->context->smarty->assign('lines', $lines);
 
+        $this->context->smarty->assign('printTypes', ['A4', '10x14']);
+        $this->context->smarty->assign('printType', Tools::getValue('PRINT_TYPE') ? Tools::getValue('PRINT_TYPE') : 0);
+
         $this->context->smarty->assign('token', Tools::getAdminTokenLite('CargusEditAwb'));
         $this->context->smarty->assign('tokenAdmin', Tools::getAdminTokenLite('CargusAdmin'));
         $this->context->smarty->assign('cookie', _COOKIE_KEY_);

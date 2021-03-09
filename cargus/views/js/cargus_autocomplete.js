@@ -11,7 +11,7 @@
 
         if (element != null) {
             if ($('[name="id_country"]').val() == 36 && $('[name="id_state"]').val()) {
-                $.post(cargus_url + 'index.php?controller=cargus&judet=' + $('[name="id_state"]').val() + '&val=' + value, function (data) {
+                $.post(cargus_url + 'index.php?fc=module&module=cargus&controller=city&judet=' + $('[name="id_state"]').val() + '&val=' + value, function (data) {
                     element.replaceWith('<select name="' + attr_name + '" class="' + attr_class + '" id="' + attr_id + '">' + data + '</select>');
                 });
             } else {
