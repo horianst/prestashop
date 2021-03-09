@@ -19,7 +19,7 @@
     #edit_form span {
         color: #666;
         font-size: 11px;
-        line-height: 0px;
+        line-height: 0;
     }
 </style>
 
@@ -54,7 +54,7 @@
                                        value="{$line.id}"/>
                             </td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.order_id}</td>
-                            <td class='{cycle name=color values="odd,even"}'>{($pickups.$line.pickup_id.Name) ? ($pickups.$line.pickup_id.Name) : '-/-'}</td>
+                            <td class='{cycle name=color values="odd,even"}'>{($pickups[$line.pickup_id]) ? ($pickups[$line.pickup_id]) : '-/-'}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.name}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.locality_name|cat:(($line.county_name) ? ', ' : '')|cat:$line.county_name}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.envelopes}</td>
@@ -66,7 +66,7 @@
                             <td>
                                 <div class="btn-group-action">
                                     <div class="btn-group pull-right">
-                                        <a href="index.php?controller=CargusAwbHistory&token={$token}&Id={$line.id}"
+                                        <a href="index.php?controller=CargusEditAwb&token={$token}&id={$line.id}"
                                            title="Editare" class="edit btn btn-default">
                                             <i class="icon-pencil"></i> Vizualizare
                                         </a>
@@ -89,30 +89,28 @@
             <script>
                 // VALIDEAZA AWB-urile SELECTATE
                 $('[name="submit_valideaza"]').click(function () {
-                    $('#alert_zone').html('');
-                    var coduri = new Array();
+                    var coduri = [];
                     $('input[name*=\'selected\']:checked').each(function () {
                         coduri.push($(this).val());
                     });
                     if (coduri.length > 0) {
                         return true;
                     } else {
-                        $('#alert_zone').html('<div class="bootstrap"><div class="alert alert-danger" style="display:block;">Nu ati selectat niciun AWB pentru validare!</div></div></div>');
+                        alert('Nu ati selectat niciun AWB pentru validare!');
                     }
                     return false;
                 });
 
                 // STERGE AWB-urile SELECTATE
                 $('[name="submit_sterge"]').click(function () {
-                    $('#alert_zone').html('');
-                    var coduri = new Array();
+                    var coduri = [];
                     $('input[name*=\'selected\']:checked').each(function () {
                         coduri.push($(this).val());
                     });
                     if (coduri.length > 0) {
                         return true;
                     } else {
-                        $('#alert_zone').html('<div class="bootstrap"><div class="alert alert-danger" style="display:block;">Nu ati selectat niciun AWB pentru stergere!</div></div></div>');
+                        alert('Nu ati selectat niciun AWB pentru stergere!');
                     }
                     return false;
                 });
@@ -193,37 +191,34 @@
             <script>
                 // PRINTEAZA AWB-urile SELECTATE
                 $('[name="submit_printeaza"]').click(function () {
-                    $('#alert_zone').html('');
-                    var coduri = new Array();
+                    var coduri = [];
                     $('input[name*=\'awbs\']:checked').each(function () {
                         coduri.push($(this).val());
                     });
                     if (coduri.length > 0) {
                         window.open('index.php?controller=CargusAdmin&type=PRINTAWB&token={$tokenAdmin}&secret={$cookie}&codes=[' + coduri.join(',') + ']', '', 'width=900, height=600, left=50, top=50');
                     } else {
-                        $('#alert_zone').html('<div class="bootstrap"><div class="alert alert-danger" style="display:block;">Nu ati selectat niciun AWB pentru printare!</div></div></div>');
+                        alert('Nu ati selectat niciun AWB pentru printare!');
                     }
                     return false;
                 });
 
                 // TRIMITE COMANDA CURENTA
                 $('[name="submit_trimite"]').click(function () {
-                    $('#alert_zone').html('');
-                    window.location.href = 'index.php?controller=CargusAdmin&type=SENDORDER&token={$tokenAdmin}&secret={$cookie}';
+                    window.open('index.php?controller=CargusAdmin&type=SENDORDER&token={$tokenAdmin}&secret={$cookie}', '', 'width=900, height=600, left=50, top=50');
                     return false;
                 });
 
                 // DEZACTIVEAZA AWB-urile SELECTATE
                 $('[name="submit_dezactiveaza"]').click(function () {
-                    $('#alert_zone').html('');
-                    var coduri = new Array();
+                    var coduri = [];
                     $('input[name*=\'awbs\']:checked').each(function () {
                         coduri.push($(this).val());
                     });
                     if (coduri.length > 0) {
                         return true;
                     } else {
-                        $('#alert_zone').html('<div class="bootstrap"><div class="alert alert-danger" style="display:block;">Nu ati selectat niciun AWB pentru dezactivare!</div></div></div>');
+                        alert('Nu ati selectat niciun AWB pentru dezactivare!');
                     }
                     return false;
                 });

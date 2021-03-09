@@ -23,3 +23,6 @@
         margin: 5px 0 0 0;
     }
 </style>
+<scsript>
+    alert('Sunt incarcat');
+</scsript>

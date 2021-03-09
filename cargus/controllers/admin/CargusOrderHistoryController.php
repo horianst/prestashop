@@ -34,14 +34,14 @@ class CargusOrderHistoryController extends ModuleAdminController
 
             $token = $cargus->CallMethod('LoginUser', $fields, 'POST');
 
-            $awbs = $cargus->CallMethod('Awbs?&orderId=' . Tools::getValue('OrderId'), [], 'GET', $token);
+            $awbs = $cargus->CallMethod('Awbs?&orderId=' . Tools::getValue('orderId'), [], 'GET', $token);
 
-            $this->context->smarty->assign('orderId', Tools::getValue('OrderId'));
+            $this->context->smarty->assign('orderId', Tools::getValue('orderId'));
 
             if (is_null($awbs)) {
                 $this->errors[] = 'Nu exista niciun AWB asociat acestei comenzi!';
             } else {
-                $this->context->smarty->assign('orderId', Tools::getValue('OrderId'));
+                $this->context->smarty->assign('orderId', Tools::getValue('orderId'));
                 $this->context->smarty->assign('awbs', $awbs);
                 $this->context->smarty->assign('token', Tools::getAdminTokenLite('CargusAwbHistory'));
 

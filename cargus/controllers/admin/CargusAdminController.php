@@ -231,7 +231,7 @@ class CargusAdminController extends ModuleAdminController
 
                 // trimite email cu link-ul pentru tracking
                 $awbs = $cargus->CallMethod('Awbs?orderId='.$order_id, array(), 'GET', $token);
-                echo '<pre>';
+
                 foreach ($awbs as $a) {
                     if ($a['Status'] != 'Deleted') {
                         $data = Db::getInstance()->ExecuteS("SELECT
@@ -257,11 +257,11 @@ class CargusAdminController extends ModuleAdminController
 
                         global $cookie;
                         $id_lang = $cookie->id_lang;
-                        $template_name = 'urgent_awb';
+                        $template_name = 'cargus_awb';
                         $title = Mail::l('Comanda ridicata de Cargus');
                         $from = Configuration::get('PS_SHOP_EMAIL');
                         $fromName = Configuration::get('PS_SHOP_NAME');
-                        $mailDir = PS_ADMIN_DIR.'/../mails/';
+                        $mailDir = __DIR__.'/../../mails/';
                         $toName = $data[0]['firstname'].' '.$data[0]['lastname'];
                         $send = Mail::Send($id_lang, $template_name, $title, $templateVars, $data[0]['email'], $toName, $from, $fromName, NULL, NULL, $mailDir);
                     }
@@ -269,6 +269,7 @@ class CargusAdminController extends ModuleAdminController
 
                 // UC print borderou
                 echo '<script>window.opener.location.reload(); window.resizeTo(916, 669); window.location = "index.php?controller=CargusAdmin&type=PRINTBORDEROU&token='.Tools::getAdminTokenLite('CargusAdmin').'&secret='._COOKIE_KEY_.'&orderId='.$order_id.'";</script>';
+                die();
             }
 
             if (isset($_GET['type']) && $_GET['type'] == 'PRINTBORDEROU') {

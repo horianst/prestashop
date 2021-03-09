@@ -7,5 +7,3 @@ var secret = '{$smarty.const._COOKIE_KEY_}';
 var cragus_token = '{$CargusAdminToken}';
 </script>
 <script src="{$smarty.const.__PS_BASE_URI__}modules/cargus/views/js/admin_mods.js"></script>
-
-{*todo add token*}

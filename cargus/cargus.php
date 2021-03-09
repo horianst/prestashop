@@ -48,7 +48,8 @@ class Cargus extends Module
     function install()
     {
         Db::getInstance()->execute("DROP TABLE IF EXISTS `awb_urgent_cargus`");
-        Db::getInstance()->execute('
+        Db::getInstance()->execute(
+            '
             CREATE TABLE IF NOT EXISTS `awb_urgent_cargus` (
             `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
             `order_id` int(11) NOT NULL,
@@ -82,29 +83,22 @@ class Cargus extends Module
             `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
-            ');
+            '
+        );
 
         if (!parent::install() ||
             !$this->registerHook('header') ||
             !$this->registerHook('rightColumn') ||
             !$this->registerHook('leftColumn') ||
             !$this->registerHook('backOfficeHeader') ||
-            $this->registerHook('actionFrontControllerSetVariables') ||
-            $this->installTabs()
+            !$this->installTabs()
         ) {
             return false;
         }
 
-        $this->addCarrier();
+       $this->addCarrier();
 
         return true;
-    }
-
-    public function hookActionFrontControllerSetVariables()
-    {
-        return [
-            'cargus_admin_token' => 'your_value1',
-        ];
     }
 
     public function installTabs()
@@ -199,11 +193,112 @@ class Cargus extends Module
         return true;
     }
 
+    public function addCarrier()
+    {
+        $carrier = new Carrier();
+        $carrier->name = 'Cargus';
+        $carrier->id_tax_rules_group = 0;
+        $carrier->id_zone = 1;
+        $carrier->active = true;
+        $carrier->deleted = 0;
+        $carrier->shipping_handling = false;
+        $carrier->range_behavior = 0;
+        $carrier->is_module = true;
+        $carrier->shipping_external = true;
+        $carrier->external_module_name = 'cargus';
+        $carrier->need_range = true;
+
+        $languages = Language::getLanguages(true);
+        foreach ($languages as $language) {
+            if ($language['iso_code'] == 'fr') {
+                $carrier->delay[(int)$language['id_lang']] = '24 heures';
+            }
+            if ($language['iso_code'] == 'ro') {
+                $carrier->delay[(int)$language['id_lang']] = '24 ore';
+            }
+            if ($language['iso_code'] == 'en') {
+                $carrier->delay[(int)$language['id_lang']] = '24 hours';
+            }
+            if ($language['iso_code'] == Language::getIsoById(Configuration::get('PS_LANG_DEFAULT'))) {
+                $carrier->delay[(int)$language['id_lang']] = '24 hours';
+            }
+        }
+
+        if ($carrier->add()) {
+
+            // Save Carrier ID
+            Configuration::updateValue('CARGUS_CARRIER_ID', (int)$carrier->id);
+
+            $groups = Group::getGroups(true);
+            foreach ($groups as $group) {
+                Db::getInstance()->insert(
+                    _DB_PREFIX_ . 'carrier_group',
+                    array(
+                        'id_carrier' => (int)($carrier->id),
+                        'id_group' => (int)($group['id_group'])
+                    )
+                );
+            }
+
+            $rangePrice = new RangePrice();
+            $rangePrice->id_carrier = $carrier->id;
+            $rangePrice->delimiter1 = '0';
+            $rangePrice->delimiter2 = '10000';
+            $rangePrice->add();
+
+            $rangeWeight = new RangeWeight();
+            $rangeWeight->id_carrier = $carrier->id;
+            $rangeWeight->delimiter1 = '0';
+            $rangeWeight->delimiter2 = '10000';
+            $rangeWeight->add();
+
+            $zones = Zone::getZones(true);
+
+            foreach ($zones as $zone) {
+                Db::getInstance()->insert(
+                    _DB_PREFIX_ . 'carrier_zone',
+                    array(
+                        'id_carrier' => (int)($carrier->id),
+                        'id_zone' => (int)($zone['id_zone'])
+                    )
+                );
+                Db::getInstance()->insert(
+                    _DB_PREFIX_ . 'delivery',
+                    array(
+                        'id_carrier' => (int)($carrier->id),
+                        'id_range_price' => (int)($rangePrice->id),
+                        'id_range_weight' => null,
+                        'id_zone' => (int)($zone['id_zone']),
+                        'price' => '0'
+                    )
+                );
+                Db::getInstance()->insert(
+                    _DB_PREFIX_ . 'delivery',
+                    array(
+                        'id_carrier' => (int)($carrier->id),
+                        'id_range_price' => null,
+                        'id_range_weight' => (int)($rangeWeight->id),
+                        'id_zone' => (int)($zone['id_zone']),
+                        'price' => '0'
+                    )
+                );
+            }
+
+            // Copy Logo
+            if (!copy(dirname(__FILE__) . '/carrier.png', _PS_SHIP_IMG_DIR_ . '/' . (int)$carrier->id . '.jpg')) {
+                return false;
+            }
+
+            // Return ID Carrier
+            return (int)($carrier->id);
+        }
+
+        return false;
+    }
+
     public function uninstall()
     {
-        $this->removeCarrier();
-        
-        Db::getInstance()->execute("DELETE FROM "._DB_PREFIX_."configuration WHERE `name` LIKE '%CARGUS%'");
+        Db::getInstance()->execute("DELETE FROM " . _DB_PREFIX_ . "configuration WHERE `name` LIKE '%CARGUS%'");
         Db::getInstance()->execute("DROP TABLE IF EXISTS awb_urgent_cargus");
 
         if (!parent::uninstall() ||
@@ -211,32 +306,48 @@ class Cargus extends Module
             !$this->unregisterHook('rightColumn') ||
             !$this->unregisterHook('leftColumn') ||
             !$this->unregisterHook('backOfficeHeader') ||
-            $this->uninstallTabs()
+            !$this->uninstallTabs()
 
         ) {
             return false;
         }
 
+        $this->removeCarrier();
+
         return true;
+    }
+
+    public function removeCarrier()
+    {
+        $carrier = new Carrier(Configuration::get('CARGUS_CARRIER_ID', $id_lang = null));
+        $carrier->delete();
     }
 
     public function uninstallTabs()
     {
-        $tabRepository = new TabRepository();
 
-        $id_tab = $tabRepository->findOneByClassName('CargusPreferences');
+        $id_tab = (int) Tab::getIdFromClassName('CargusAwbHistory');
         $tab = new Tab($id_tab);
         $tab->delete();
-
-        $id_tab = $tabRepository->findOneIdByClassName('CargusHistory');
+        $id_tab = (int) Tab::getIdFromClassName('CargusOrderHistory');
         $tab = new Tab($id_tab);
         $tab->delete();
-
-        $id_tab = $tabRepository->findOneIdByClassName('CargusOrders');
+        $id_tab = (int) Tab::getIdFromClassName('CargusPreferences');
         $tab = new Tab($id_tab);
         $tab->delete();
-
-        $id_tab = $tabRepository->findOneIdByClassName('CARGUS');
+        $id_tab = (int) Tab::getIdFromClassName('CargusHistory');
+        $tab = new Tab($id_tab);
+        $tab->delete();
+        $id_tab = (int) Tab::getIdFromClassName('CargusOrders');
+        $tab = new Tab($id_tab);
+        $tab->delete();
+        $id_tab = (int) Tab::getIdFromClassName('CargusEditAwb');
+        $tab = new Tab($id_tab);
+        $tab->delete();
+        $id_tab = (int) Tab::getIdFromClassName('CargusAdmin');
+        $tab = new Tab($id_tab);
+        $tab->delete();
+        $id_tab = (int) Tab::getIdFromClassName('CARGUS');
         $tab = new Tab($id_tab);
         $tab->delete();
 
@@ -387,14 +498,11 @@ class Cargus extends Module
         return $this->display(__FILE__, 'views/templates/hook/frontend_header.tpl');
     }
 
-
-    //todo dose this work
     function hookRightColumn($params)
     {
         return $this->display(__FILE__, 'views/templates/hook/awb_tracking.tpl');
     }
 
-    //todo dose this work
     function hookLeftColumn($params)
     {
         return $this->display(__FILE__, 'views/templates/hook/awb_tracking.tpl');
@@ -403,22 +511,20 @@ class Cargus extends Module
     function hookBackOfficeHeader($params)
     {
         if (strtolower($_GET['controller']) == 'adminorders' && !isset($_GET['id_order'])) {
-
             $this->context->smarty->assign('CargusAdminToken', Tools::getAdminTokenLite('CargusAdmin'));
-
-
             return $this->display(__FILE__, 'views/templates/hook/admin_mods.tpl');
         } else {
-            //todo path fix
             return $this->display(__FILE__, 'views/templates/hook/cargus_autocomplete.tpl');
         }
     }
 
-    public function getOrderShippingCost($params, $shipping_cost) {
+    public function getOrderShippingCost($params, $shipping_cost)
+    {
         return $this->calculeazaTransport($params);
     }
 
-    public function getOrderShippingCostExternal($params) {
+    public function getOrderShippingCostExternal($params)
+    {
         return $this->calculeazaTransport($params);
     }
 
@@ -426,12 +532,16 @@ class Cargus extends Module
     {
         try {
             // daca este ales un cost fix pentru expeditie, nu mai calculeaza transportul si returneaza costul fix
-            $cost_fix_expeditie = Configuration::get('_URGENT_COST_FIX_', $id_lang = NULL);
-            if ($cost_fix_expeditie != '') return round($cost_fix_expeditie, 2);
+            $cost_fix_expeditie = Configuration::get('CARGUS_COST_FIX', $id_lang = null);
+            if ($cost_fix_expeditie != '') {
+                return round($cost_fix_expeditie, 2);
+            }
 
             // determin greutatea
             $total_weight = ceil($cart->getTotalWeight());
-            if ($total_weight == 0) $total_weight = 1;
+            if ($total_weight == 0) {
+                $total_weight = 1;
+            }
 
             // obtin id-ul monezii folosite in cos
             $id_currency = (int)$cart->id_currency;
@@ -451,16 +561,20 @@ class Cargus extends Module
             $currency_DEFAULT = new Currency($id_currency);
 
             // obtin totalul cosului in lei
-            $orderTotal = Tools::convertPriceFull($cart->getOrderTotal(true, Cart::ONLY_PHYSICAL_PRODUCTS_WITHOUT_SHIPPING), $currency_DEFAULT, $currency_RON);
+            $orderTotal = Tools::convertPriceFull(
+                $cart->getOrderTotal(true, Cart::ONLY_PHYSICAL_PRODUCTS_WITHOUT_SHIPPING),
+                $currency_DEFAULT,
+                $currency_RON
+            );
 
             // daca totalul cosului depaseste plafonul, transportul este gratuit
-            $plafon_plata_dest = Configuration::get('_URGENT_TRANSPORT_GRATUIT_', $id_lang = NULL);
+            $plafon_plata_dest = Configuration::get('CARGUS_TRANSPORT_GRATUIT', $id_lang = null);
             if (round($orderTotal, 2) > $plafon_plata_dest && $plafon_plata_dest > 0) {
                 return 0;
             }
 
             // obtin valoarea declarata a expeditiei
-            if (Configuration::get('_URGENT_ASIGURARE_', $id_lang = NULL) == '1') {
+            if (Configuration::get('CARGUS_ASIGURARE', $id_lang = null) == '1') {
                 $valoare_declarata = round($orderTotal, 2);
             } else {
                 $valoare_declarata = 0;
@@ -484,7 +598,7 @@ class Cargus extends Module
             }
 
             // detarmin valorile pentru ramburs
-            if (Configuration::get('_URGENT_TIP_RAMBURS_', $id_lang = NULL) == 'cont') {
+            if (Configuration::get('CARGUS_TIP_RAMBURS', $id_lang = null) == 'cont') {
                 $ramburs_cont_colector = $suma_ramburs;
                 $ramburs_cash = 0;
             } else {
@@ -506,7 +620,7 @@ class Cargus extends Module
 
             // obtin indicativul judetului destinatarului
             $states = State::getStatesByIdCountry($delivery_address->id_country);
-            $state_ISO = NULL;
+            $state_ISO = null;
             foreach ($states as $s) {
                 if ($s['id_state'] == $delivery_address->id_state) {
                     $state_ISO = $s['iso_code'];
@@ -517,24 +631,27 @@ class Cargus extends Module
             }
 
             // include si instantiaza clasa urgent
-            require_once(_PS_MODULE_DIR_.'/urgentcargus/urgentcargus.class.php');
-            $uc = new UrgentClass(Configuration::get('_URGENT_APIURL_', $id_lang = NULL), Configuration::get('_URGENT_APIKEY_', $id_lang = NULL));
+            require_once(_PS_MODULE_DIR_ . '/cargus/cargus.class.php');
+            $cargus = new CargusClass(
+                Configuration::get('CARGUS_API_URL', $id_lang = null),
+                Configuration::get('CARGUS_API_KEY', $id_lang = null)
+            );
 
             // UC login user
             $fields = array(
-                'UserName' => Configuration::get('_URGENT_USERNAME_', $id_lang = NULL),
-                'Password' => Configuration::get('_URGENT_PASSWORD_', $id_lang = NULL)
+                'UserName' => Configuration::get('CARGUS_USERNAME', $id_lang = null),
+                'Password' => Configuration::get('CARGUS_PASSWORD', $id_lang = null)
             );
-            $token = $uc->CallMethod('LoginUser', $fields, 'POST');
+            $token = $cargus->CallMethod('LoginUser', $fields, 'POST');
 
             // UC punctul de ridicare default
             $location = array();
-            $pickups = $uc->CallMethod('PickupLocations', array(), 'GET', $token);
+            $pickups = $cargus->CallMethod('PickupLocations', array(), 'GET', $token);
             if (is_null($pickups)) {
                 die('Nu exista niciun punct de ridicare asociat acestui cont!');
             }
             foreach ($pickups as $pick) {
-                if (Configuration::get('_URGENT_PUNCT_RIDICARE_', $id_lang = NULL) == $pick['LocationId']) {
+                if (Configuration::get('CARGUS_PUNCT_RIDICARE', $id_lang = null) == $pick['LocationId']) {
                     $location = $pick;
                 }
             }
@@ -547,8 +664,8 @@ class Cargus extends Module
                 'FromLocalityName' => '',
                 'ToCountyName' => $state_ISO,
                 'ToLocalityName' => $delivery_address->city,
-                'Parcels' => Configuration::get('_URGENT_TIP_EXPEDITIE_', $id_lang = NULL) != 'plic' ? 1 : 0,
-                'Envelopes' => Configuration::get('_URGENT_TIP_EXPEDITIE_', $id_lang = NULL) == 'plic' ? 1 : 0,
+                'Parcels' => Configuration::get('CARGUS_TIP_EXPEDITIE', $id_lang = null) != 'plic' ? 1 : 0,
+                'Envelopes' => Configuration::get('CARGUS_TIP_EXPEDITIE', $id_lang = null) == 'plic' ? 1 : 0,
                 'TotalWeight' => $total_weight,
                 'DeclaredValue' => $valoare_declarata,
                 'CashRepayment' => $ramburs_cash,
@@ -556,15 +673,15 @@ class Cargus extends Module
                 'OtherRepayment' => '',
                 'PaymentInstrumentId' => 0,
                 'PaymentInstrumentValue' => 0,
-                'OpenPackage' => Configuration::get('_URGENT_DESCHIDERE_COLET_', $id_lang = NULL) != 1 ? false : true,
-                'SaturdayDelivery' => Configuration::get('_URGENT_SAMBATA_', $id_lang = NULL) != 1 ? false : true,
-                'MorningDelivery' => Configuration::get('_URGENT_DIMINEATA_', $id_lang = NULL) != 1 ? false : true,
-                'ShipmentPayer' => Configuration::get('_URGENT_PLATITOR_', $id_lang = NULL) != 'expeditor' ? 2 : 1,
-                'ServiceId' => Configuration::get('_URGENT_PLATITOR_', $id_lang = NULL) != 'expeditor' ? 4 : 1,
+                'OpenPackage' => Configuration::get('CARGUS_DESCHIDERE_COLET', $id_lang = null) != 1 ? false : true,
+                'SaturdayDelivery' => Configuration::get('CARGUS_SAMBATA', $id_lang = null) != 1 ? false : true,
+                'MorningDelivery' => Configuration::get('CARGUS_DIMINEATA', $id_lang = null) != 1 ? false : true,
+                'ShipmentPayer' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 2 : 1,
+                'ServiceId' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 4 : 1,
                 //'PriceTableId' => Configuration::get('_URGENT_PLAN_TARIFAR_', $id_lang = NULL)
                 'PriceTableId' => null
             );
-            $result = $uc->CallMethod('ShippingCalculation', $fields, 'POST', $token);
+            $result = $cargus->CallMethod('ShippingCalculation', $fields, 'POST', $token);
 
             if (!isset($result['Subtotal'])) {
                 return null;
@@ -577,81 +694,9 @@ class Cargus extends Module
                 print_r($fields);
                 die();
             }
-
         } catch (Exception $ex) {
             print_r($ex);
             die();
         }
-    }
-
-    public function addCarrier()
-    {
-        $carrier = new Carrier();
-        $carrier->name = 'Cargus';
-        $carrier->id_tax_rules_group = 0;
-        $carrier->id_zone = 1;
-        $carrier->active = true;
-        $carrier->deleted = 0;
-        $carrier->shipping_handling = false;
-        $carrier->range_behavior = 0;
-        $carrier->is_module = true;
-        $carrier->shipping_external = true;
-        $carrier->external_module_name = 'cargus';
-        $carrier->need_range = true;
-
-        $languages = Language::getLanguages(true);
-        foreach ($languages as $language) {
-            if ($language['iso_code'] == 'fr')
-                $carrier->delay[(int)$language['id_lang']] = '24 heures';
-            if ($language['iso_code'] == 'ro')
-                $carrier->delay[(int)$language['id_lang']] = '24 ore';
-            if ($language['iso_code'] == 'en')
-                $carrier->delay[(int)$language['id_lang']] = '24 hours';
-            if ($language['iso_code'] == Language::getIsoById(Configuration::get('PS_LANG_DEFAULT')))
-                $carrier->delay[(int)$language['id_lang']] = '24 hours';
-        }
-
-        if ($carrier->add()) {
-            $groups = Group::getGroups(true);
-            foreach ($groups as $group)
-                Db::getInstance()->autoExecute(_DB_PREFIX_.'carrier_group', array('id_carrier' => (int)($carrier->id), 'id_group' => (int)($group['id_group'])), 'INSERT');
-
-            $rangePrice = new RangePrice();
-            $rangePrice->id_carrier = $carrier->id;
-            $rangePrice->delimiter1 = '0';
-            $rangePrice->delimiter2 = '10000';
-            $rangePrice->add();
-
-            $rangeWeight = new RangeWeight();
-            $rangeWeight->id_carrier = $carrier->id;
-            $rangeWeight->delimiter1 = '0';
-            $rangeWeight->delimiter2 = '10000';
-            $rangeWeight->add();
-
-            $zones = Zone::getZones(true);
-            foreach ($zones as $zone) {
-                Db::getInstance()->autoExecute(_DB_PREFIX_.'carrier_zone', array('id_carrier' => (int)($carrier->id), 'id_zone' => (int)($zone['id_zone'])), 'INSERT');
-                Db::getInstance()->autoExecuteWithNullValues(_DB_PREFIX_.'delivery', array('id_carrier' => (int)($carrier->id), 'id_range_price' => (int)($rangePrice->id), 'id_range_weight' => NULL, 'id_zone' => (int)($zone['id_zone']), 'price' => '0'), 'INSERT');
-                Db::getInstance()->autoExecuteWithNullValues(_DB_PREFIX_.'delivery', array('id_carrier' => (int)($carrier->id), 'id_range_price' => NULL, 'id_range_weight' => (int)($rangeWeight->id), 'id_zone' => (int)($zone['id_zone']), 'price' => '0'), 'INSERT');
-            }
-
-            // Copy Logo
-            if (!copy(dirname(__FILE__).'/carrier.png', _PS_SHIP_IMG_DIR_.'/'.(int)$carrier->id.'.jpg'))
-                return false;
-
-            // Save Carrier ID
-            Configuration::updateValue('CARGUS_CARRIER_ID', (int)$carrier->id);
-
-            // Return ID Carrier
-            return (int)($carrier->id);
-        }
-
-        return false;
-    }
-
-    public function removeCarrier()
-    {
-        $carrier = new Carrier(Configuration::get('CARGUS_CARRIER_ID', $id_lang = NULL));
-        $carrier->delete();
     }
 }

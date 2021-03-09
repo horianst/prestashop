@@ -68,7 +68,7 @@
                                 <td>
                                     <div class="btn-group-action">
                                         <div class="btn-group pull-right">
-                                            <a href="index.php?controller=CargusOrderHistory&token={$token}&OrderId={$order.OrderId}" title="Vizualizare" class="edit btn btn-default">
+                                            <a href="index.php?controller=CargusOrderHistory&token={$token}&orderId={$order.OrderId}" title="Vizualizare" class="edit btn btn-default">
                                                 <i class="icon-search-plus"></i> Vizualizare
                                             </a>
                                         </div>

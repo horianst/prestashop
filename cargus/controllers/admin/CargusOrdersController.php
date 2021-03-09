@@ -24,7 +24,30 @@ class CargusOrdersController extends ModuleAdminController
 
         if (Tools::isSubmit('submitPickup')) {
             Configuration::updateValue('CARGUS_PUNCT_RIDICARE', Tools::getValue('CARGUS_PUNCT_RIDICARE'));
-            $this->confirmations[] = 'Punctul de ridicare a fost schimbat!';
+
+            $_SESSION['post_status'] = array(
+                'confirmations' => array('Punctul de ridicare a fost schimbat!'),
+            );
+
+            ob_end_clean();
+            header('Location: '.$_SERVER['REQUEST_URI']);
+            die();
+        }
+
+        if (isset($_SESSION['post_status'])) {
+            if(isset($_SESSION['post_status']['confirmations'])){
+                $this->confirmations = $_SESSION['post_status']['confirmations'];
+            }
+
+            if(isset($_SESSION['post_status']['errors'])){
+                $this->errors = $_SESSION['post_status']['errors'];
+            }
+
+            if(isset($_SESSION['post_status']['warnings'])){
+                $this->errors = $_SESSION['post_status']['warnings'];
+            }
+
+            unset($_SESSION['post_status']);
         }
 
         // VALIDEAZA AWB-urile AFLATE IN ASTEPTARE
@@ -93,13 +116,23 @@ class CargusOrdersController extends ModuleAdminController
             }
 
             if (count($errors) == 0) {
-                $this->confirmations[] = 'Toate AWB-urile selectate au fost validate cu succes!';
+                $_SESSION['post_status'] = array(
+                    'confirmations' => array('Toate AWB-urile selectate au fost validate cu succes!'),
+                );
             } else if (count($success) == 0) {
-                $this->errors[] = 'Niciun AWB selectat nu a putut fi validat!';
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Niciun AWB selectat nu a putut fi validat!'),
+                );
             } else {
-                $this->warnings[] = 'ATENTIE: Doar o parte din AWB-urile selectate au fost validate cu succes!';
-                $this->errors[] = 'Nu a fost posibila validarea urmatoarelor comenzi: '.implode(', ', $errors);
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Nu a fost posibila validarea urmatoarelor comenzi: '.implode(', ', $errors)),
+                    'warnings' => array('ATENTIE: Doar o parte din AWB-urile selectate au fost validate cu succes!'),
+                );
             }
+
+            ob_end_clean();
+            header('Location: '.$_SERVER['REQUEST_URI']);
+            die();
         }
 
         // STERGE AWB-urile AFLATE IN ASTEPTARE
@@ -116,13 +149,23 @@ class CargusOrdersController extends ModuleAdminController
             }
 
             if (count($errors) == 0) {
-                $this->confirmations[] = 'Toate AWB-urile selectate au fost sterse cu succes!';
+                $_SESSION['post_status'] = array(
+                    'confirmations' => array('Toate AWB-urile selectate au fost sterse cu succes!'),
+                );
             } else if (count($success) == 0) {
-                $this->errors[] = 'Niciun AWB selectat nu a putut fi sters!';
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Niciun AWB selectat nu a putut fi sters!'),
+                );
             } else {
-                $this->warnings[] = 'ATENTIE: Doar o parte din AWB-urile selectate au fost sterse cu succes!';
-                $this->errors[] = 'Nu a fost posibila stergerea urmatoarelor comenzi: '.implode(', ', $errors);
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Nu a fost posibila stergerea urmatoarelor comenzi: '.implode(', ', $errors)),
+                    'warnings' => array('ATENTIE: Doar o parte din AWB-urile selectate au fost sterse cu succes!'),
+                );
             }
+
+            ob_end_clean();
+            header('Location: '.$_SERVER['REQUEST_URI']);
+            die();
         }
 
         // DEZACTIVEAZA AWB-urile DEJA VALIDATE
@@ -154,18 +197,30 @@ class CargusOrdersController extends ModuleAdminController
             }
 
             if (count($errors) == 0) {
-                $this->confirmations[] = 'Toate AWB-urile selectate au fost dezactivate cu succes!';
+                $_SESSION['post_status'] = array(
+                    'confirmations' => array('Toate AWB-urile selectate au fost dezactivate cu succes!'),
+                );
             } else if (count($success) == 0) {
-                $this->errors[] = 'Niciun AWB selectat nu a putut fi dezactivat!';
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Niciun AWB selectat nu a putut fi dezactivat!'),
+                );
             } else {
-                $this->warnings[] = 'ATENTIE: Doar o parte din AWB-urile selectate au fost dezactivate cu succes!';
-                $this->errors[] = 'Nu a fost posibila dezactivarea urmatoarelor AWB-uri: '.implode(', ', $errors);
+                $_SESSION['post_status'] = array(
+                    'errors' => array('Nu a fost posibila dezactivarea urmatoarelor AWB-uri: '.implode(', ', $errors)),
+                    'warnings' => array('ATENTIE: Doar o parte din AWB-urile selectate au fost dezactivate cu succes!'),
+                );
             }
+
+            ob_end_clean();
+            header('Location: '.$_SERVER['REQUEST_URI']);
+            die();
         }
 
-        if(Configuration::get('CARGUS_USERNAME', $id_lang = NULL) == '' || Configuration::get('CARGUS_PASSWORD', $id_lang = NULL) == ''){
-            $this->errors[] = 'Va rugam sa completati username-ul si parola in pagina de configurare a modulului!';
-        } elseif (Configuration::get('CARGUS_USERNAME', $id_lang = NULL) == '' || Configuration::get('CARGUS_PASSWORD', $id_lang = NULL) == ''){
+        $pickups = null;
+        $awbs = null;
+        $lines = null;
+
+        if (Configuration::get('CARGUS_USERNAME', $id_lang = NULL) == '' || Configuration::get('CARGUS_PASSWORD', $id_lang = NULL) == ''){
             $this->errors[] = 'Va rugam sa completati username-ul si parola in pagina de configurare a modulului!';
         } else {
             $cargus = new CargusClass(Configuration::get('CARGUS_API_URL', $id_lang = NULL), Configuration::get('CARGUS_API_KEY', $id_lang = NULL));
@@ -212,16 +267,17 @@ class CargusOrdersController extends ModuleAdminController
                 if (count($lines) == 0) {
                     $this->warnings[] = 'Nu exista niciun AWB in asteptare!';
                 }
-
-                $this->context->smarty->assign('cookie', _COOKIE_KEY_);
-                $this->context->smarty->assign('pickups', $pickups);
-                $this->context->smarty->assign('pickupsSelect', Configuration::get('CARGUS_PUNCT_RIDICARE', $id_lang = NULL));
-                $this->context->smarty->assign('awbs', $awbs);
-                $this->context->smarty->assign('lines', $lines);
-                $this->context->smarty->assign('token', Tools::getAdminTokenLite('CargusAwbHistory'));
-                $this->context->smarty->assign('tokenAdmin', Tools::getAdminTokenLite('CargusAdmin'));
             }
         }
+
+        $this->context->smarty->assign('pickups', $pickups);
+        $this->context->smarty->assign('awbs', $awbs);
+        $this->context->smarty->assign('lines', $lines);
+
+        $this->context->smarty->assign('token', Tools::getAdminTokenLite('CargusEditAwb'));
+        $this->context->smarty->assign('tokenAdmin', Tools::getAdminTokenLite('CargusAdmin'));
+        $this->context->smarty->assign('cookie', _COOKIE_KEY_);
+        $this->context->smarty->assign('pickupsSelect', Configuration::get('CARGUS_PUNCT_RIDICARE', $id_lang = NULL));
 
         $this->setTemplate('orders.tpl');
     }
