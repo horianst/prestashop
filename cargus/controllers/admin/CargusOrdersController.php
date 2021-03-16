@@ -66,51 +66,76 @@ class CargusOrdersController extends ModuleAdminController
 
                 // UC create awb
                 $row = Db::getInstance()->ExecuteS("SELECT * FROM awb_urgent_cargus WHERE barcode = '0' AND id = '".addslashes($id)."'");
-                $fields = array(
-                    'Sender' => array(
-                        'LocationId' => $row[0]['pickup_id']
-                    ),
-                    'Recipient' => array(
-                        'LocationId' => null,
-                        'Name' => $row[0]['name'],
-                        'CountyId' => null,
-                        'CountyName' => $row[0]['county_name'],
-                        'LocalityId' => null,
-                        'LocalityName' => $row[0]['locality_name'],
-                        'StreetId' => null,
-                        'StreetName' => '-',
-                        'AddressText' => $row[0]['address'],
-                        'ContactPerson' => $row[0]['contact'],
-                        'PhoneNumber' => $row[0]['phone'],
-                        'Email' => $row[0]['email']
-                    ),
-                    'Parcels' => $row[0]['parcels'],
-                    'Envelopes' => $row[0]['envelopes'],
-                    'TotalWeight' => $row[0]['weight'],
-                    'DeclaredValue' => $row[0]['value'],
-                    'CashRepayment' => $row[0]['cash_repayment'],
-                    'BankRepayment' => $row[0]['bank_repayment'],
-                    'OtherRepayment' => $row[0]['other_repayment'],
-                    'OpenPackage' => $row[0]['openpackage'] == 1 ? true : false,
-                    'PriceTableId' => null,
-                    'ShipmentPayer' => $row[0]['payer'],
-                    'ServiceId' => ($row[0]['payer'] != 1 ? 4 : 1),
-                    'MorningDelivery' => $row[0]['morning_delivery'] == 1 ? true : false,
-                    'SaturdayDelivery' => $row[0]['saturday_delivery'] == 1 ? true : false,
-                    'Observations' => $row[0]['observations'],
-                    'PackageContent' => $row[0]['contents'],
-                    'CustomString' => $row[0]['order_id']
-                );
 
-                $barcode = $cargus->CallMethod('Awbs', $fields, 'POST', $token);
-                if (is_null($barcode)) {
-                    $errors[] = addslashes($id);
-                } else {
-                    $update = Db::getInstance()->execute("UPDATE awb_urgent_cargus SET barcode = '".$barcode."' WHERE id = '".addslashes($id)."'");
-                    if ($update == 1) {
-                        $success[] = addslashes($id);
-                    } else {
+                $go = true;
+
+                if($row[0]['weight'] < 0.1 || $row[0]['length'] < 0.1 || $row[0]['width'] < 0.1){
+                    $errors[] = 'Va rugam sa introduceti dimensiunile coletelor!';
+                    $go = false;
+                }
+
+                if(!$row[0]['postal_code']){
+                    $errors[] = 'Va rugam sa introduceti codul postal al destinatarului!';
+                    $go = false;
+                }
+
+                if($go) {
+                    $fields = array(
+                        'Sender' => array(
+                            'LocationId' => $row[0]['pickup_id']
+                        ),
+                        'Recipient' => array(
+                            'LocationId' => null,
+                            'Name' => $row[0]['name'],
+                            'CountyId' => null,
+                            'CountyName' => $row[0]['county_name'],
+                            'LocalityId' => null,
+                            'LocalityName' => $row[0]['locality_name'],
+                            'StreetId' => null,
+                            'StreetName' => '-',
+                            'AddressText' => $row[0]['address'],
+                            'ContactPerson' => $row[0]['contact'],
+                            'PhoneNumber' => $row[0]['phone'],
+                            'Email' => $row[0]['email'],
+                            'CodPostal' => $row[0]['postal_code'],
+                        ),
+                        'Parcels' => $row[0]['parcels'],
+                        'Envelopes' => $row[0]['envelopes'],
+                        'TotalWeight' => $row[0]['weight'],
+                        'DeclaredValue' => $row[0]['value'],
+                        'CashRepayment' => $row[0]['cash_repayment'],
+                        'BankRepayment' => $row[0]['bank_repayment'],
+                        'OtherRepayment' => $row[0]['other_repayment'],
+                        'OpenPackage' => $row[0]['openpackage'] == 1 ? true : false,
+                        'ShipmentPayer' => $row[0]['payer'],
+                        'MorningDelivery' => $row[0]['morning_delivery'] == 1 ? true : false,
+                        'SaturdayDelivery' => $row[0]['saturday_delivery'] == 1 ? true : false,
+                        'Observations' => $row[0]['observations'],
+                        'PackageContent' => $row[0]['contents'],
+                        'CustomString' => $row[0]['order_id'],
+                        'ParcelCodes' => [
+                            [
+                                'Code'=> 0,
+                                'Type'=>   $row[0]['parcels'] > 0 ? 1 : 0,
+                                'Weight' => $row[0]['weight'],
+                                'Length' => $row[0]['length'],
+                                'Width' => $row[0]['width'],
+                                'Height' => $row[0]['height'],
+                                'ParcelContent' => $row[0]['contents']
+                            ]
+                        ]
+                    );
+
+                    $barcode = $cargus->CallMethod('Awbs', $fields, 'POST', $token);
+                    if (is_null($barcode)) {
                         $errors[] = addslashes($id);
+                    } else {
+                        $update = Db::getInstance()->execute("UPDATE awb_urgent_cargus SET barcode = '".$barcode."' WHERE id = '".addslashes($id)."'");
+                        if ($update == 1) {
+                            $success[] = addslashes($id);
+                        } else {
+                            $errors[] = addslashes($id);
+                        }
                     }
                 }
             }
