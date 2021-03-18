@@ -69,7 +69,7 @@ class CargusOrdersController extends ModuleAdminController
 
                 $go = true;
 
-                if($row[0]['weight'] < 0.1 || $row[0]['length'] < 0.1 || $row[0]['width'] < 0.1){
+                if(!$row[0]['height'] || !$row[0]['length'] || !$row[0]['width']){
                     $errors[] = 'Va rugam sa introduceti dimensiunile coletelor!';
                     $go = false;
                 }
@@ -126,15 +126,18 @@ class CargusOrdersController extends ModuleAdminController
                         ]
                     );
 
-                    $barcode = $cargus->CallMethod('Awbs', $fields, 'POST', $token);
+                    $barcode = $cargus->CallMethod('Awbs', $fields, 'POST', $token, true);
+
                     if (is_null($barcode)) {
-                        $errors[] = addslashes($id);
+                        $errors[] = 'AWB-ul ' . addslashes($id) . ' nu a putut fi validat';
+                        $errorIds = addslashes($id);
                     } else {
                         $update = Db::getInstance()->execute("UPDATE awb_urgent_cargus SET barcode = '".$barcode."' WHERE id = '".addslashes($id)."'");
                         if ($update == 1) {
                             $success[] = addslashes($id);
                         } else {
-                            $errors[] = addslashes($id);
+                            $errors[] = 'AWB-ul ' . addslashes($id) . ' nu a putut fi actualizat in baza de date';
+                            $errorIds = addslashes($id);
                         }
                     }
                 }
@@ -146,11 +149,11 @@ class CargusOrdersController extends ModuleAdminController
                 );
             } else if (count($success) == 0) {
                 $_SESSION['post_status'] = array(
-                    'errors' => array('Niciun AWB selectat nu a putut fi validat!'),
+                    'errors' => $errors,
                 );
             } else {
                 $_SESSION['post_status'] = array(
-                    'errors' => array('Nu a fost posibila validarea urmatoarelor comenzi: '.implode(', ', $errors)),
+                    'errors' => array('Nu a fost posibila validarea urmatoarelor comenzi: '.implode(', ', $errorIds)),
                     'warnings' => array('ATENTIE: Doar o parte din AWB-urile selectate au fost validate cu succes!'),
                 );
             }

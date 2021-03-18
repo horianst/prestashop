@@ -137,7 +137,7 @@
                     <span title="" data-toggle="tooltip" class="label-tooltip" data-original-title="" data-html="true">Lungime</span>
                 </label>
                 <div class="col-lg-4">
-                    <input type="text" name="lenght" value="{$data.lenght}" />
+                    <input type="text" name="length" value="{$data.length}" />
                 </div>
             </div>
             <div class="form-group">

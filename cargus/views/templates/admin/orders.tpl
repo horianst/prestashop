@@ -65,7 +65,7 @@
                             <td class='{cycle name=color values="odd,even"}'>{$line.envelopes}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.parcels}</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.weight} kg</td>
-                            <td class='{cycle name=color values="odd,even"}'>{$line.lenght} cm</td>
+                            <td class='{cycle name=color values="odd,even"}'>{$line.length} cm</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.width} cm</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.height} cm</td>
                             <td class='{cycle name=color values="odd,even"}'>{$line.cash_repayment} lei</td>

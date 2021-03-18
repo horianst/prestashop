@@ -36,7 +36,7 @@ class CargusEditAwbController extends ModuleAdminController
                                 parcels = '".addslashes(Tools::getValue('parcels'))."',
                                 envelopes = '".addslashes(Tools::getValue('envelopes'))."',
                                 weight = '".addslashes(Tools::getValue('weight'))."',
-                                lenght = '".addslashes(Tools::getValue('lenght'))."',
+                                length = '".addslashes(Tools::getValue('length'))."',
                                 width = '".addslashes(Tools::getValue('width'))."',
                                 height = '".addslashes(Tools::getValue('height'))."',
                                 value = '".addslashes(Tools::getValue('value'))."',

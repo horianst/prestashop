@@ -70,7 +70,7 @@ class Cargus extends Module
             `parcels` int(11) NOT NULL,
             `envelopes` int(11) NOT NULL,
             `weight` int(11) NOT NULL,
-            `lenght` int(11) NOT NULL,
+            `length` int(11) NOT NULL,
             `width` int(11) NOT NULL,
             `height` int(11) NOT NULL,
             `value` double NOT NULL,
