@@ -517,7 +517,7 @@ class Cargus extends Module
         if (strtolower($_GET['controller']) == 'adminorders' && !isset($_GET['id_order'])) {
             $this->context->smarty->assign('CargusAdminToken', Tools::getAdminTokenLite('CargusAdmin'));
             return $this->display(__FILE__, 'views/templates/hook/admin_mods.tpl');
-        } else {
+        } elseif (strtolower( Tools::getValue('controller')) == 'order') {
             return $this->display(__FILE__, 'views/templates/hook/cargus_autocomplete.tpl');
         }
     }
@@ -657,6 +657,7 @@ class Cargus extends Module
             foreach ($pickups as $pick) {
                 if (Configuration::get('CARGUS_PUNCT_RIDICARE', $id_lang = null) == $pick['LocationId']) {
                     $location = $pick;
+                    break;
                 }
             }
 
@@ -680,10 +681,7 @@ class Cargus extends Module
                 'OpenPackage' => Configuration::get('CARGUS_DESCHIDERE_COLET', $id_lang = null) != 1 ? false : true,
                 'SaturdayDelivery' => Configuration::get('CARGUS_SAMBATA', $id_lang = null) != 1 ? false : true,
                 'MorningDelivery' => Configuration::get('CARGUS_DIMINEATA', $id_lang = null) != 1 ? false : true,
-                'ShipmentPayer' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 2 : 1,
-                'ServiceId' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 4 : 1,
-                //'PriceTableId' => Configuration::get('_URGENT_PLAN_TARIFAR_', $id_lang = NULL)
-                'PriceTableId' => null
+                'ShipmentPayer' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 2 : 1
             );
             $result = $cargus->CallMethod('ShippingCalculation', $fields, 'POST', $token);
 
