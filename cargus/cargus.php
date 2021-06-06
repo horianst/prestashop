@@ -683,6 +683,17 @@ class Cargus extends Module
                 'MorningDelivery' => Configuration::get('CARGUS_DIMINEATA', $id_lang = null) != 1 ? false : true,
                 'ShipmentPayer' => Configuration::get('CARGUS_PLATITOR', $id_lang = null) != 'expeditor' ? 2 : 1
             );
+
+            if(Configuration::get('CARGUS_SERVICIU', $id_lang = null) == 1) {
+                if($total_weight <= 31){
+                    $fields['ServiceId'] = 34;
+                } elseif ($total_weight <= 50){
+                    $fields['ServiceId'] = 35;
+                } else {
+                    $fields['ServiceId'] = 36;
+                }
+            }
+
             $result = $cargus->CallMethod('ShippingCalculation', $fields, 'POST', $token);
 
             if (!isset($result['Subtotal'])) {

@@ -80,11 +80,11 @@ class CargusOrdersController extends ModuleAdminController
                 }
 
                 if($go) {
-                    $fields = array(
-                        'Sender' => array(
+                    $fields = [
+                        'Sender' => [
                             'LocationId' => $row[0]['pickup_id']
-                        ),
-                        'Recipient' => array(
+                        ],
+                        'Recipient' => [
                             'LocationId' => null,
                             'Name' => $row[0]['name'],
                             'CountyId' => null,
@@ -98,7 +98,7 @@ class CargusOrdersController extends ModuleAdminController
                             'PhoneNumber' => $row[0]['phone'],
                             'Email' => $row[0]['email'],
                             'CodPostal' => $row[0]['postal_code'],
-                        ),
+                        ],
                         'Parcels' => $row[0]['parcels'],
                         'Envelopes' => $row[0]['envelopes'],
                         'TotalWeight' => $row[0]['weight'],
@@ -124,7 +124,17 @@ class CargusOrdersController extends ModuleAdminController
                                 'ParcelContent' => $row[0]['contents']
                             ]
                         ]
-                    );
+                    ];
+
+                    if(Configuration::get('CARGUS_SERVICIU', $id_lang = null) == 1) {
+                        if($row[0]['weight'] <= 31){
+                            $fields['ServiceId'] = 34;
+                        } elseif ($row[0]['weight'] <= 50){
+                            $fields['ServiceId'] = 35;
+                        } else {
+                            $fields['ServiceId'] = 36;
+                        }
+                    }
 
                     $barcode = $cargus->CallMethod('Awbs', $fields, 'POST', $token, true);
 
