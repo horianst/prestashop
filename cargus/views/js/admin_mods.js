@@ -12,40 +12,28 @@ $(document).ready(function(){
         } else {
             var add = 0;
             var err = 0;
+            var checked = null;
 
             if($('[name="order_orders_bulk[]"]:checked').length){
-                $('[name="order_orders_bulk[]"]:checked').each(function () {
-                    var id = parseInt($(this).val());
-                    $.ajax({
-                        async: false,
-                        url: cargus_url + cargus_admindir + '/index.php?controller=CargusAdmin&token=' + cragus_token +'&type=ADDORDER&secret=' + secret + '&id=' + id + '&rand=' + Math.floor((Math.random() * 1000000) + 1),
-                        success: function (data) {
-                            if (data == 'ok') {
-                                ++add;
-                            } else {
-                                ++err;
-                            }
-                        }
-                    });
-                });
+                checked = $('[name="order_orders_bulk[]"]:checked')
+            } else {
+                checked = $('[name="orderBox[]"]:checked')
             }
 
-            if($('[name="orderBox[]"]:checked').length){
-                $('[name="orderBox[]"]:checked').each(function () {
-                    var id = parseInt($(this).val());
-                    $.ajax({
-                        async: false,
-                        url: cargus_url + cargus_admindir + '/index.php?controller=CargusAdmin&token=' + cragus_token +'&type=ADDORDER&secret=' + secret + '&id=' + id + '&rand=' + Math.floor((Math.random() * 1000000) + 1),
-                        success: function (data) {
-                            if (data == 'ok') {
-                                ++add;
-                            } else {
-                                ++err;
-                            }
+            checked.each(function () {
+                var id = parseInt($(this).val());
+                $.ajax({
+                    async: false,
+                    url: cargus_url + cargus_admindir + '/index.php?controller=CargusAdmin&token=' + cragus_token +'&type=ADDORDER&secret=' + secret + '&id=' + id + '&rand=' + Math.floor((Math.random() * 1000000) + 1),
+                    success: function (data) {
+                        if (data == 'ok') {
+                            ++add;
+                        } else {
+                            ++err;
                         }
-                    });
+                    }
                 });
-            }
+            });
 
             if (add > 0) {
                 alert(add + ' comenzi au fost adaugate in expeditia curenta Cargus!');
